@@ -92,6 +92,8 @@ control SwitchIngress(
         inout ingress_intrinsic_metadata_for_deparser_t ig_intr_dprsr_md,
         inout ingress_intrinsic_metadata_for_tm_t ig_intr_tm_md) {
 
+    bit<1> validity;
+
     // Register to validate the latency value 
     Register <bit<32>, _> (32w1)  tscal;
 
@@ -128,6 +130,15 @@ control SwitchIngress(
         hdr.timestamp.rec_num = hdr.timestamp.rec_num + 1;      
     }
 
+    action add_ts_header(){
+        hdr.ethernet.ether_type = TYPE_TS;
+        hdr.timestamp.setValid();
+        hdr.timestamp.proto_id = ETHERTYPE_IPV4;
+        hdr.timestamp.rec_num = 0;
+        hdr.timestamp.ts = ig_intr_md.ingress_mac_tstamp[31:0];
+        hdr.timestamp.flag = 0;
+    }
+
     table flag_table {
         key = {
             hdr.timestamp.flag : exact;
@@ -140,15 +151,20 @@ control SwitchIngress(
         size = 1;
     }
 
-    apply {
-        // add ts header
-        if (!hdr.timestamp.isValid()) {
-            hdr.ethernet.ether_type = TYPE_TS;
-            hdr.timestamp.proto_id = ETHERTYPE_IPV4;
-            hdr.timestamp.rec_num = 0;
-            hdr.timestamp.ts = ig_intr_md.ingress_mac_tstamp[31:0];
-            hdr.timestamp.flag = 0;
+    table valid_table {
+        key = {
+            validity : exact;
         }
+        actions = {
+            add_ts_header;
+        }
+        size = 1;
+    }
+
+    apply {
+        validity = (bit<1>)hdr.timestamp.isValid();
+
+        valid_table.apply();
 
         ig_md.ts_diff = 0;
         comp_diff();
