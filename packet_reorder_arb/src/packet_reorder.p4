@@ -135,13 +135,19 @@ control SwitchIngress(
         ig_intr_tm_md.ucast_egress_port = rec_port;  
     }
 
+    action set_flag_1(){
+        hdr.rec.flag = 1;
+    }
+
     table rorder_table {
         key = {
             hdr.rec.order : exact;
         }
         actions = {
             rorder_assign;
+            set_flag_1;
         }
+        default_action = set_flag_1();
     }
 
     table flag_table {
@@ -167,6 +173,7 @@ control SwitchIngress(
             valid_action();
         }
         flag_table.apply();
+        
         
 
         // No need for egress processing, skip it and use empty controls for egress.

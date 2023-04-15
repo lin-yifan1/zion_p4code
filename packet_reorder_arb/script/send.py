@@ -16,6 +16,18 @@ def main():
     pkt = Ether() / IP(src="2.2.2.2", dst="3.3.3.3") / TCP(sport=80, dport=20) / "3"
 
     sendp(pkt, iface="veth251", verbose=False)
+    
+    pkt = Ether() / IP(src="2.2.2.2", dst="3.3.3.3") / TCP(sport=80, dport=20) / "4"
+
+    sendp(pkt, iface="veth251", verbose=False)
+    
+    pkt = Ether() / IP(src="2.2.2.2", dst="3.3.3.3") / TCP(sport=80, dport=20) / "5"
+
+    sendp(pkt, iface="veth251", verbose=False)
+    
+    pkt = Ether() / IP(src="2.2.2.2", dst="3.3.3.3") / TCP(sport=80, dport=20) / "6"
+
+    sendp(pkt, iface="veth251", verbose=False)
 
 
 if __name__ == '__main__':
