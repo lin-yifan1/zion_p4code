@@ -1,11 +1,5 @@
 #include <core.p4>
-#if __TARGET_TOFINO__ == 3
-#include <t3na.p4>
-#elif __TARGET_TOFINO__ == 2
-#include <t2na.p4>
-#else
 #include <tna.p4>
-#endif
 
 const bit<16> TYPE_TS = 0x1212;
 const PortId_t rec_port = 68;        // recirculation port
@@ -29,6 +23,7 @@ struct headers {
 
 struct metadata_t {
     bit<32>  ts_diff;
+    bit<32>  latency;
 }
 
 // ---------------------------------------------------------------------------
@@ -103,7 +98,7 @@ control SwitchIngress(
     RegisterAction<bit<32>, bit<1>, bit<8>>(tscal) tscal_action = {
         void apply(inout bit<32> value, out bit<8> readvalue) {
             value = 0;
-            if (ig_md.ts_diff > latency){
+            if (ig_md.ts_diff > ig_md.latency){
                 readvalue = 1;
             }
             else {
@@ -139,6 +134,10 @@ control SwitchIngress(
         hdr.timestamp.flag = 0;
     }
 
+    action write_latency(bit<32> lat) {
+        ig_md.latency = lat;
+    }
+
     table flag_table {
         key = {
             hdr.timestamp.flag : exact;
@@ -161,10 +160,22 @@ control SwitchIngress(
         size = 1;
     }
 
+    table latency_table {
+        key = {
+            hdr.ipv4.dst_addr : exact;
+        }
+        actions = {
+            write_latency;
+        }
+        size = 1;
+    }
+
     apply {
         validity = (bit<1>)hdr.timestamp.isValid();
 
         valid_table.apply();
+
+        latency_table.apply();
 
         ig_md.ts_diff = 0;
         comp_diff();

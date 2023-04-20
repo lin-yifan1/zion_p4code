@@ -8,6 +8,7 @@ valid_table = p4.SwitchIngress.valid_table
 
 flag_table.add_with_send(flag=1, port=1)
 valid_table.add_with_add_ts_header(validity=0)
+latency_table.add_with_write_latency(lat=100000000)
 
 bfrt.complete_operations()
 
